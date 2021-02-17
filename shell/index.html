@@ -1,14 +1,16 @@
 <!doctype html>
-
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>webpeer</title>
+    <link rel="stylesheet" href="./xterm.css" />
+    <script src="./bundle.js"></script>
+    <meta charset="utf-8"></meta>
 </head>
-
-<body>
-
-Hello webpeer shell
-
+<body style="background-color: #242424; margin: 5px; overflow: hidden;">
+    <div id="terminal" style="width: calc(100vw - 5px); height: calc(100vh - 5px);"></div>
+    <script>
+    var args = { peer: window.location.search.slice(1) }
+    var element = document.getElementById('terminal');
+    var shell = new WebPeerShell(element, args);
+    </script>
 </body>
 </html>
