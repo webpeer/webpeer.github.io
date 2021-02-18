@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+    <title>wps</title>
     <link rel="stylesheet" href="./xterm.css" />
     <link rel="icon" type="image/png" href="./favicon.png" />
     <script src="./bundle.js"></script>
@@ -10,7 +11,11 @@
 <body style="background-color: #242424; margin: 5px; overflow: hidden;">
     <div id="terminal" style="width: calc(100vw - 5px); height: calc(100vh - 5px);"></div>
     <script>
-    var args = { peer: window.location.search.slice(1) }
+    var peer = window.location.search.slice(1);
+    if(peer != ""){
+        document.title = "wps - " + peer;
+    }
+    var args = { peer: peer }
     var element = document.getElementById('terminal');
     var shell = new WebPeerShell(element, args);
     </script>
