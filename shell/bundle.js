@@ -52009,7 +52009,8 @@ var WebPeerShell = function WebPeerShell(element, args) {
       user = _ref2[0],
       endpoint = _ref2[1];
 
-  var tracker = ["ws://webpeertracker.local:3000", 'wss://tracker.webpeer.repl.co', "wss://tracker.openwebtorrent.com", "wss://tracker.sloppyta.co/announce", "wss://open.tube/tracker/socket"];
+  var tracker = [// "ws://localhost:3000",
+  'wss://tracker.webpeer.repl.co', "wss://tracker.openwebtorrent.com", "wss://tracker.sloppyta.co/announce"];
   args = {
     user: user,
     endpoint: endpoint,
