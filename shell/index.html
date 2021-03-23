@@ -11,9 +11,18 @@
 <body style="background-color: #242424; margin: 5px; overflow: hidden;">
     <div id="terminal" style="width: calc(100vw - 5px); height: calc(100vh - 5px);"></div>
     <script>
-    var peer = window.location.search.slice(1);
+    var peer = unescape(window.location.search.slice(1));
     if(peer != ""){
         document.title = "wps - " + peer;
+        if (history.pushState) {
+            var newurl = (
+                window.location.protocol + "//" + 
+                window.location.host + 
+                window.location.pathname + '?' + 
+                peer
+            );
+            window.history.pushState({path:newurl},'',newurl);
+        }
     }
     var args = { peer: peer }
     var element = document.getElementById('terminal');
