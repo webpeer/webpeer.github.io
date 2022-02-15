@@ -363,6 +363,7 @@ const make_simple_local_rtc_pair_connection = async () => {
         channel.onmessage = e => console.log({ message: e.data, sender: `${host}:${rtc_port}`})
         console.log(`Connected to ${host} over webRTC`)
         console.log("Use channel.send('message') to send data")
+        document.body.innerHTML = `Connected to ${host} over webRTC`
     }
     connection.onicecandidate = async e => {
         if(!e || !e.candidate || !e.candidate.candidate) return;
