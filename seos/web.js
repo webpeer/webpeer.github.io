@@ -51,38 +51,33 @@ const get_host = c => c.split(" ")[4]
 const get_port = c => parseInt(c.split(" ")[5])
 const get_type = c => c.match(/typ host/)? 'host' : c.match(/typ srflx/)? 'srflx' : 'unknown';
 
-const decode_str = buffer => {
-    const index = buffer.findIndex(i => i >= 128)
-    return buffer
-        .slice(0, index + 1)
-        .map(i => String.fromCharCode(i % 128))
-        .join("")
-}
-
-const encode_str = str => {
-    const result = [...str].map(c => c.charCodeAt())
-    result[result.length - 1] |= 128
-    return result
-}
-
 const decode_sdp = buffer => {
-    const fingerprint = buffer.slice(0,32)
+    const arr2str = arr => arr.map(i => String.fromCharCode(i % 128)).join("")
+    const decode_str = b => arr2str(b.slice(0, b.findIndex(i => i >= 128) + 1).map(i => i % 128))
+    const format_fingerprint = arr => arr.map(i => ('0' + i.toString(16)).slice(-2)).join(':')
+    const fingerprint = format_fingerprint(buffer.slice(0,32))
     const port = extract_ports(buffer.slice(32,34))[0]
     const ufrag = decode_str(buffer.slice(34))
     const pwd = decode_str(buffer.slice(34 + ufrag.length))
     return { fingerprint, port, ufrag, pwd }
 }
 
-const encode_sdp = options => {
-    options = options || {}
-    const { fingerprint, port, ufrag, pwd } = options
-    return [ ...fingerprint, ...bundle_ports([port]), ...encode_str(ufrag), ...encode_str(pwd) ]
+const encode_sdp = attributes => {
+    const str2arr = str => [...str].map(c => c.charCodeAt())
+    const encode_str = str => str2arr(str).map((c, i) => c + 128 * (i == str.length - 1))
+    const parse_fingerprint = f => f.split(':').map(i => parseInt(i, 16))
+    const { fingerprint, port, ufrag, pwd } = attributes
+    return [ 
+        ...parse_fingerprint(fingerprint),
+        ...bundle_ports([port]),
+        ...encode_str(ufrag),
+        ...encode_str(pwd)
+    ]
 }
 
 const stringify_sdp = options => {
     options = options || {}
     const { host, port, fingerprint, ufrag, pwd, answer, offer } = options
-    const format_fingerprint = arr => arr.map(i => ('0' + i.toString(16)).slice(-2)).join(':')
     const session_id = Math.floor(Math.random() * 2**24)
     const candidate_id = Math.floor(Math.random() * 2**24)
     return [
@@ -100,7 +95,7 @@ const stringify_sdp = options => {
         'a=sendrecv',
         `a=ice-ufrag:${ufrag}`,
         `a=ice-pwd:${pwd}`,
-        `a=fingerprint:sha-256 ${format_fingerprint(fingerprint)}`,
+        `a=fingerprint:sha-256 ${fingerprint}`,
         `a=candidate:1 1 UDP ${candidate_id} ${host} ${port} typ host`,
         '',
     ].join("\r\n")
@@ -112,12 +107,10 @@ const parse_sdp = sdp => {
         .filter(l => l.match(/a=candidate:/) && get_type(l) == 'host')
         .find(() => true)
 
-    const parse_fingerprint = f => f.split(':').map(i => parseInt(i, 16))
-
     return {
         host: get_host(candidate),
         port: get_port(candidate),
-        fingerprint: parse_fingerprint(sdp.match(/a=fingerprint:sha-256 ([a-fA-F0-9\:]*)/)[1]),
+        fingerprint: sdp.match(/a=fingerprint:sha-256 ([a-fA-F0-9\:]*)/)[1],
         ufrag: sdp.match(/a=ice-ufrag:(.*)\r?\n/)[1],
         pwd: sdp.match(/a=ice-pwd:(.*)\r?\n/)[1],
         answer: !!sdp.match(/a=setup:active/),
