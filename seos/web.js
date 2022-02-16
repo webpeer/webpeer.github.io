@@ -67,7 +67,7 @@ const encode_sdp = attributes => {
     const encode_str = str => str2arr(str).map((c, i) => c + 128 * (i == str.length - 1))
     const parse_fingerprint = f => f.split(':').map(i => parseInt(i, 16))
     const { fingerprint, port, ufrag, pwd } = attributes
-    return [ 
+    return [
         ...parse_fingerprint(fingerprint),
         ...bundle_ports([port]),
         ...encode_str(ufrag),
@@ -121,7 +121,7 @@ const parse_sdp = sdp => {
 const open_socket = () => {
     let socket = null
     let socket_reset_count = 0
-    
+
     const socket_close = () => {
         if(socket && socket.connectionState != 'closed'){
             socket.close()
@@ -147,7 +147,7 @@ const open_socket = () => {
         let response_count = 0;
         let response_count_on_last_retry = 0;
         predicate = predicate || ((res) => resp_ports.delete(res.port))
-    
+
         const onicecandidate = e => {
             if (!e || !e.candidate || !e.candidate.candidate) return;
             const host = get_host(e.candidate.candidate)
@@ -241,9 +241,7 @@ const make_incomming_packet_filter = (packet_set, accept_empty) => r => {
     return false;
 }
 
-const send = async (host, port, message, options) => {
-    options = options || {}
-    const { delay } = options
+const send = async (host, port, message) => {
     const { socket_send, socket_close, socket_count } = open_socket()
     // Send up to 255 "bytes of data" using (1 + 1 + 8 + 128 =) 138 ports
     // With 128 data ports open, each stun request carries 16 bits of information and each row can
@@ -253,12 +251,10 @@ const send = async (host, port, message, options) => {
     try {
         let res1 = (await socket_send(host, [port], _ => true, retry_count = 2))[0]
         recv_ports = extract_ports(parse_ip(res1.host)).sort()
-        await new Promise(accept => setTimeout(accept, delay))
 
         // console.log("sock2", res1.port)
         let res2 = (await socket_send(host, [res1.port], r => r.port == port ))[0]
         ctrl_ports = extract_ports(parse_ip(res2.host)).sort()
-        await new Promise(accept => setTimeout(accept, delay))
         // console.log("ctrl ports", ctrl_ports)
         // console.log("recv ports", recv_ports)
         console.log("SEOS: (1/3) Running bootstrapping...")
@@ -273,18 +269,14 @@ const send = async (host, port, message, options) => {
     {
         const packets = new Set()
         const incomming_packet_filter = make_incomming_packet_filter(packets, false)
-        // await send_stun_packets(host, [ctrl_ports[0]]);
-        // await new Promise(accept => setTimeout(accept, delay))
 
         const res1 = (await socket_send(host, recv_ports, incomming_packet_filter))
         const send_ports1 = res1.map(s => extract_ports(parse_ip(s.host))).flat()
-        await socket_send(host, [ctrl_ports[1]]);
-        await new Promise(accept => setTimeout(accept, delay))
+        await socket_send(host, [ctrl_ports[0]]);
 
         const res2 = (await socket_send(host, recv_ports, incomming_packet_filter))
         const send_ports2 = res2.map(s => extract_ports(parse_ip(s.host))).flat()
-        await socket_send(host, [ctrl_ports[2]]);
-        await new Promise(accept => setTimeout(accept, delay))
+        await socket_send(host, [ctrl_ports[1]]);
 
         send_ports = send_ports1.concat(send_ports2).sort()
         // console.log("send ports", send_ports)
@@ -294,13 +286,11 @@ const send = async (host, port, message, options) => {
     // STEP 3, send data to remote
     {
         message = [message.length, ...message]
-        for (let i = 0, w = 0; i < message.length; (i+=4) & (w+=1)) {
+        for (let i = 0, w = 0; i < message.length; (i+=4) & (w++)) {
             // Send data
             await socket_send(host, map_data_to_ports(send_ports, message.slice(i, i+4)));
-            await new Promise(accept => setTimeout(accept, delay))
             // Send window progression
-            await socket_send(host, [ctrl_ports[(w % 4) + 4]]);
-            await new Promise(accept => setTimeout(accept, delay))
+            await socket_send(host, [ctrl_ports[(w%4) + 4]]);
         }
         console.log("SEOS: (3/3) Receiving data...")
     }
@@ -313,15 +303,12 @@ const send = async (host, port, message, options) => {
         const incomming_packet_filter = make_incomming_packet_filter(packets, true)
         const is_done = () => in_data[0] >= 0 && in_data.length + 1 >= in_data[0]
 
-        let w = 1;
-        while(!is_done()){
+        for(let w = 0; !is_done(); w++){
             // Request data
             const res = (await socket_send(host, recv_ports, incomming_packet_filter))
-            await new Promise(accept => setTimeout(accept, delay))
             in_data = in_data.concat(res.map(s => parse_ip(s.host)).flat())
             // Send window progression
-            await socket_send(host, [ctrl_ports[(w++)%4]]);
-            await new Promise(accept => setTimeout(accept, delay))
+            await socket_send(host, [ctrl_ports[w%4]]);
         }
         socket_close()
         console.log(`SEOS: Handshake completed using (${socket_count()}) RTCPeerConnection(s)`)
@@ -355,11 +342,10 @@ const send = async (host, port, message, options) => {
 
         for(let i = 0; i < 3; i++){
             try{
-                const delay = 0 
                 document.body.innerHTML = `Connecting to ${host}`
                 console.log("SEOS: Connecting to", `${host}:${port}`)
                 const start_time = new Date()
-                const response = await send(host, port, message, { delay })
+                const response = await send(host, port, message)
                 const time_diff = (new Date() - start_time) / 1000
                 console.log(`SEOS: Handshake completed in ${time_diff}s`)
                 // console.log(`Response: [${response}]`)
