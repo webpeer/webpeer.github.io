@@ -90,7 +90,7 @@ const stringify_sdp = options => {
         `o=- ${session_id} 0 IN IP4 127.0.0.1`,
         's=-',
         't=0 0',
-        'm=application 9 UDP/DTLS/SCTP webrtc-datachannel',
+        `m=application ${port} UDP/DTLS/SCTP webrtc-datachannel`,
         'c=IN IP4 0.0.0.0',
         'a=msid-semantic: WMS',
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
@@ -210,7 +210,7 @@ const open_socket = () => {
                 clearInterval(_retry_interval)
                 _reject(new ErrorConnectionRefused(`No reply from ${host}`))
             }
-        }, ports[0] != 8535? (200 + 200 * retry_count) : (_cancel_timeout *= 2));
+        }, ports[0] != 8535? (1000 + 500 * retry_count) : (_cancel_timeout *= 2));
         return new Promise((accept, reject) => {
             _accept = accept
             _reject = reject
