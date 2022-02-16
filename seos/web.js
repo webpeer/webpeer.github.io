@@ -258,7 +258,6 @@ const send = async (host, port, message, options) => {
 
     // STEP 1, get port to read data from remote
     try {
-        console.log("Connecting to", `${host}:${port} using SEOS client`)
         let res1 = (await socket_send(host, [port], _ => true, retry_count = 2))[0]
         recv_ports = extract_ports(parse_ip(res1.host)).sort()
         await new Promise(accept => setTimeout(accept, delay))
@@ -269,7 +268,7 @@ const send = async (host, port, message, options) => {
         await new Promise(accept => setTimeout(accept, delay))
         // console.log("ctrl ports", ctrl_ports)
         // console.log("recv ports", recv_ports)
-        console.log("SEOS server found. Running bootstrapping...")
+        console.log("SEOS: (1/3) Running bootstrapping...")
     } catch (err) {
         socket_close()
         if(err instanceof ErrorConnectionRefused){
@@ -296,7 +295,7 @@ const send = async (host, port, message, options) => {
 
         send_ports = send_ports1.concat(send_ports2).sort()
         // console.log("send ports", send_ports)
-        console.log("Bootstrapping completed, sending request data...")
+        console.log("SEOS: (2/3) Sending data...")
     }
 
     // STEP 3, send data to remote
@@ -310,7 +309,7 @@ const send = async (host, port, message, options) => {
             await socket_send(host, [ctrl_ports[(w % 4) + 4]]);
             await new Promise(accept => setTimeout(accept, delay))
         }
-        console.log("Request data sent. Receiving response data...")
+        console.log("SEOS: (3/3) Receiving data...")
     }
 
     // STEP 4 receive data from host
@@ -332,7 +331,7 @@ const send = async (host, port, message, options) => {
             await new Promise(accept => setTimeout(accept, delay))
         }
         socket_close()
-        console.log(`Response data received using (${socket_count()}) RTCPeerConnection(s)`)
+        console.log(`SEOS: Handshake completed using (${socket_count()}) RTCPeerConnection(s)`)
         return in_data.slice(1, in_data[0] + 1)
     }
 }
@@ -344,6 +343,10 @@ const send = async (host, port, message, options) => {
     const channel = await connection.createDataChannel('default')
 
     let rtc_port = null;
+    window.connection = connection
+    connection.onconnectionstatechange = () => {
+        console.log('connection state:', connection.connectionState)
+    }
     channel.onopen = () => {
         window.channel = channel
         channel.onmessage = e => console.log({ message: e.data, sender: `${host}:${rtc_port}`})
@@ -361,14 +364,16 @@ const send = async (host, port, message, options) => {
             try{
                 const delay = 0 
                 document.body.innerHTML = `Connecting to ${host}`
+                console.log("SEOS: Connecting to", `${host}:${port}`)
                 const start_time = new Date()
                 const response = await send(host, port, message, { delay })
                 const time_diff = (new Date() - start_time) / 1000
-                console.log(`SEOS Handshake in ${time_diff}s`)
+                console.log(`SEOS: Handshake completed in ${time_diff}s`)
                 // console.log(`Response: [${response}]`)
                 rtc_port = decode_sdp(response).port
                 // TODO: Use response message to set sdp
-                console.log(decode_sdp(response))
+                console.log('offer', decode_sdp(message))
+                console.log('answer', decode_sdp(response))
 
                 const sdp = stringify_sdp({ answer: true, host, ...decode_sdp(response)})
                 connection.setRemoteDescription({ type: 'answer', sdp })
