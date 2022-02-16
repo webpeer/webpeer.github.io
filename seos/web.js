@@ -351,7 +351,7 @@ const make_simple_local_rtc_pair_connection = async () => {
 }
 
 (async () => {
-    const host = 'macbook.local'
+    const host = window.location.search.slice(1)
     const port = 8535
     const is_safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const connection = new RTCPeerConnection()
