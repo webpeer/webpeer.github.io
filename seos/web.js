@@ -87,7 +87,6 @@ const stringify_sdp = options => {
         't=0 0',
         `m=application ${port} UDP/DTLS/SCTP webrtc-datachannel`,
         'c=IN IP4 0.0.0.0',
-        'a=msid-semantic: WMS',
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
         'a=mid:0',
         'a=sctp-port:5000',
