@@ -91,12 +91,14 @@ const stringify_sdp = options => {
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
         'a=mid:0',
         'a=sctp-port:5000',
-        'a=max-message-size:262144',
+        // 'a=max-message-size:262144',
         'a=sendrecv',
         `a=ice-ufrag:${ufrag}`,
         `a=ice-pwd:${pwd}`,
         `a=fingerprint:sha-256 ${fingerprint}`,
         `a=candidate:1 1 UDP ${candidate_id} ${host} ${port} typ host`,
+        `a=candidate:1 1 UDP ${candidate_id+1} ${host} ${port} typ prflx`,
+        `a=candidate:1 1 UDP ${candidate_id+2} ${host} ${port} typ srflx`,
         '',
     ].join("\r\n")
 }
