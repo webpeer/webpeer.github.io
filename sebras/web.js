@@ -82,9 +82,10 @@ const stringify_sdp = options => {
     const candidate_id = Math.floor(Math.random() * 2**24)
     return [
         'v=0',
-        `o=- ${session_id} 0 IN IP4 127.0.0.1`,
+        `o=- ${session_id} 0 IN IP4 0.0.0.0`,
         's=-',
         't=0 0',
+        'a=msid-semantic:WMS *',
         `m=application ${port} UDP/DTLS/SCTP webrtc-datachannel`,
         'c=IN IP4 0.0.0.0',
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
@@ -338,6 +339,7 @@ const send = async (host, port, message) => {
         if(!e || !e.candidate || !e.candidate.candidate) return;
         connection.onicecandidate = null
         const sdp = connection.localDescription.sdp + "a=" + e.candidate.candidate + "\r\n"
+        console.log("Local sdp", sdp);
         const message = encode_sdp(parse_sdp(sdp))
 
         for(let i = 0; i < 3; i++){
