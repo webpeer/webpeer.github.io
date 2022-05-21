@@ -25,7 +25,7 @@ const parse_ipv6 = (address) => {
 
 const parse_ip = address => address.includes(":")? parse_ipv6(address) : parse_ipv4(address)
 
-const extract_ports = arr => {
+const uint8arr_2_uint16BEarr = arr => {
     const result = []
     for(let i = 0; i < arr.length; i+=2){
         const b2 = arr[i+0]
@@ -36,11 +36,11 @@ const extract_ports = arr => {
     return result
 }
 
-const bundle_ports = arr => {
+const uint16BEarr_2_uint8arr = arr => {
     const result = []
-    for(let i = 0; i < arr.length; i+=2){
-        const b1 = arr % 256
-        const b2 = (arr - b1) / 256
+    for(let i = 0; i < arr.length; i+=1){
+        const b1 = arr[i] % 256
+        const b2 = (arr[i] - b1) / 256
         result.push(b2)
         result.push(b1)
     }
@@ -54,9 +54,9 @@ const get_type = c => c.match(/typ host/)? 'host' : c.match(/typ srflx/)? 'srflx
 const decode_sdp = buffer => {
     const arr2str = arr => arr.map(i => String.fromCharCode(i % 128)).join("")
     const decode_str = b => arr2str(b.slice(0, b.findIndex(i => i >= 128) + 1).map(i => i % 128))
-    const format_fingerprint = arr => arr.map(i => ('0' + i.toString(16)).slice(-2)).join(':')
-    const fingerprint = format_fingerprint(buffer.slice(0,32))
-    const port = extract_ports(buffer.slice(32,34))[0]
+    const frmt_fngrprnt = a => a.map(i => ('0' + i.toString(16)).slice(-2)).join(':').toUpperCase()
+    const fingerprint = frmt_fngrprnt(buffer.slice(0,32))
+    const port = uint8arr_2_uint16BEarr(buffer.slice(32,34))[0]
     const ufrag = decode_str(buffer.slice(34))
     const pwd = decode_str(buffer.slice(34 + ufrag.length))
     return { fingerprint, port, ufrag, pwd }
@@ -69,7 +69,7 @@ const encode_sdp = attributes => {
     const { fingerprint, port, ufrag, pwd } = attributes
     return [
         ...parse_fingerprint(fingerprint),
-        ...bundle_ports([port]),
+        ...uint16BEarr_2_uint8arr([port]),
         ...encode_str(ufrag),
         ...encode_str(pwd)
     ]
@@ -87,7 +87,6 @@ const stringify_sdp = options => {
         't=0 0',
         `m=application ${port} UDP/DTLS/SCTP webrtc-datachannel`,
         'c=IN IP4 0.0.0.0',
-        'a=msid-semantic: WMS',
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
         'a=mid:0',
         'a=sctp-port:5000',
@@ -250,14 +249,14 @@ const send = async (host, port, message) => {
     // STEP 1, get port to read data from remote
     try {
         let res1 = (await socket_send(host, [port], _ => true, retry_count = 2))[0]
-        recv_ports = extract_ports(parse_ip(res1.host)).sort()
+        recv_ports = uint8arr_2_uint16BEarr(parse_ip(res1.host)).sort()
 
         // console.log("sock2", res1.port)
         let res2 = (await socket_send(host, [res1.port], r => r.port == port ))[0]
-        ctrl_ports = extract_ports(parse_ip(res2.host)).sort()
+        ctrl_ports = uint8arr_2_uint16BEarr(parse_ip(res2.host)).sort()
         // console.log("ctrl ports", ctrl_ports)
         // console.log("recv ports", recv_ports)
-        console.log("SEOS: (1/3) Running bootstrapping...")
+        console.log("SEBRAS: (1/3) Running bootstrapping...")
     } catch (err) {
         socket_close()
         if(err instanceof ErrorConnectionRefused){
@@ -271,16 +270,16 @@ const send = async (host, port, message) => {
         const incomming_packet_filter = make_incomming_packet_filter(packets, false)
 
         const res1 = (await socket_send(host, recv_ports, incomming_packet_filter))
-        const send_ports1 = res1.map(s => extract_ports(parse_ip(s.host))).flat()
+        const send_ports1 = res1.map(s => uint8arr_2_uint16BEarr(parse_ip(s.host))).flat()
         await socket_send(host, [ctrl_ports[0]]);
 
         const res2 = (await socket_send(host, recv_ports, incomming_packet_filter))
-        const send_ports2 = res2.map(s => extract_ports(parse_ip(s.host))).flat()
+        const send_ports2 = res2.map(s => uint8arr_2_uint16BEarr(parse_ip(s.host))).flat()
         await socket_send(host, [ctrl_ports[1]]);
 
         send_ports = send_ports1.concat(send_ports2).sort()
         // console.log("send ports", send_ports)
-        console.log("SEOS: (2/3) Sending data...")
+        console.log("SEBRAS: (2/3) Sending data...")
     }
 
     // STEP 3, send data to remote
@@ -292,7 +291,7 @@ const send = async (host, port, message) => {
             // Send window progression
             await socket_send(host, [ctrl_ports[(w%4) + 4]]);
         }
-        console.log("SEOS: (3/3) Receiving data...")
+        console.log("SEBRAS: (3/3) Receiving data...")
     }
 
     // STEP 4 receive data from host
@@ -311,12 +310,13 @@ const send = async (host, port, message) => {
             await socket_send(host, [ctrl_ports[w%4]]);
         }
         socket_close()
-        console.log(`SEOS: Handshake completed using (${socket_count()}) RTCPeerConnection(s)`)
+        console.log(`SEBRAS: Handshake completed using (${socket_count()}) RTCPeerConnection(s)`)
         return in_data.slice(1, in_data[0] + 1)
     }
 }
 
 (async () => {
+    console.log("SEBRAS: Session establishment by recklessly abusing STUN")
     const host = window.location.search.slice(1)
     const port = 8535
     const connection = new RTCPeerConnection()
@@ -343,11 +343,11 @@ const send = async (host, port, message) => {
         for(let i = 0; i < 3; i++){
             try{
                 document.body.innerHTML = `Connecting to ${host}`
-                console.log("SEOS: Connecting to", `${host}:${port}`)
+                console.log("SEBRAS: Connecting to", `${host}:${port}`)
                 const start_time = new Date()
                 const response = await send(host, port, message)
                 const time_diff = (new Date() - start_time) / 1000
-                console.log(`SEOS: Handshake completed in ${time_diff}s`)
+                console.log(`SEBRAS: Handshake completed in ${time_diff}s`)
                 // console.log(`Response: [${response}]`)
                 rtc_port = decode_sdp(response).port
                 // TODO: Use response message to set sdp
