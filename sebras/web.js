@@ -82,7 +82,7 @@ const stringify_sdp = options => {
     const candidate_id = Math.floor(Math.random() * 2**24)
     return [
         'v=0',
-        `o=rtc ${session_id} 0 IN IP4 127.0.0.1`,
+        `o=- ${session_id} 0 IN IP4 127.0.0.1`,
         's=-',
         't=0 0',
         'a=sendrecv',
@@ -97,7 +97,6 @@ const stringify_sdp = options => {
         'c=IN IP4 0.0.0.0',
         'a=bundle-only',
         `a=candidate:1 1 UDP ${candidate_id} ${host} ${port} typ host`,
-        `a=candidate:2 1 UDP ${candidate_id+1} 98.128.172.10 ${port} typ srflx raddr 0.0.0.0 rport 0`,
         'a=sendrecv',
         'a=mid:0',
         'a=sctp-port:5000',
