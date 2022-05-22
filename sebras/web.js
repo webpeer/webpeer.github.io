@@ -79,10 +79,10 @@ const stringify_sdp = options => {
     options = options || {}
     const { host, port, fingerprint, ufrag, pwd, answer, offer } = options
     const session_id = Math.floor(Math.random() * 2**24)
-    const candidate_id = Math.floor(Math.random() * 2**24)
+    const candidate_id = '2122317823' //Math.floor(Math.random() * 2**24)
     return [
         'v=0',
-        `o=- ${session_id} 0 IN IP4 0.0.0.0`,
+        `o=rtc ${session_id} 0 IN IP4 127.0.0.1`,
         's=-',
         't=0 0',
         'a=msid-semantic:WMS *',
@@ -91,7 +91,7 @@ const stringify_sdp = options => {
         `a=setup:${answer? 'active' : offer? 'actpass' : ''}`,
         'a=mid:0',
         'a=sctp-port:5000',
-        // 'a=max-message-size:262144',
+        'a=max-message-size:262144',
         'a=sendrecv',
         `a=ice-ufrag:${ufrag}`,
         `a=ice-pwd:${pwd}`,
