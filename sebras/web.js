@@ -93,6 +93,7 @@ const stringify_sdp = options => {
         'a=sctp-port:5000',
         'a=max-message-size:262144',
         'a=sendrecv',
+        'a=bundle-only',
         `a=ice-ufrag:${ufrag}`,
         `a=ice-pwd:${pwd}`,
         `a=fingerprint:sha-256 ${fingerprint}`,
