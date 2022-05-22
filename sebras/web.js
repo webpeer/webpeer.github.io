@@ -97,8 +97,6 @@ const stringify_sdp = options => {
         `a=ice-pwd:${pwd}`,
         `a=fingerprint:sha-256 ${fingerprint}`,
         `a=candidate:1 1 UDP ${candidate_id} ${host} ${port} typ host`,
-        `a=candidate:1 1 UDP ${candidate_id+1} ${host} ${port} typ prflx`,
-        `a=candidate:1 1 UDP ${candidate_id+2} ${host} ${port} typ srflx`,
         '',
     ].join("\r\n")
 }
@@ -322,7 +320,7 @@ const send = async (host, port, message) => {
     console.log("SEBRAS: Session establishment by recklessly abusing STUN")
     const host = window.location.search.slice(1)
     const port = 8535
-    const connection = new RTCPeerConnection()
+    const connection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] })
     const channel = await connection.createDataChannel('default')
 
     let rtc_port = null;
