@@ -331,7 +331,7 @@ const send = async (host, port, message) => {
     console.log("SEBRAS: Session establishment by recklessly abusing STUN")
     const host = window.location.search.slice(1)
     const port = 8535
-    const connection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] })
+    const connection = new RTCPeerConnection()
     const channel = await connection.createDataChannel('default')
 
     let rtc_port = null;
