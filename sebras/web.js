@@ -335,16 +335,17 @@ const send = async (host, port, message) => {
     const channel = await connection.createDataChannel('default')
 
     let rtc_port = null;
+    let rtc_host = null;
     window.connection = connection
     connection.onconnectionstatechange = () => {
         console.log('connection state:', connection.connectionState)
     }
     channel.onopen = () => {
         window.channel = channel
-        channel.onmessage = e => console.log({ message: e.data, sender: `${host}:${rtc_port}`})
-        console.log(`Connected to ${host} over webRTC`)
+        channel.onmessage = e => console.log({ message: e.data, sender: `${rtc_host}:${rtc_port}`})
+        console.log(`Connected to ${rtc_host}:${rtc_port} over webRTC`)
         console.log("Use channel.send('message') to send data")
-        document.body.innerHTML = `Connected to ${host} over webRTC`
+        document.body.innerHTML = `Connected to ${rtc_host}:${rtc_port} over webRTC`
     }
     connection.onicecandidate = async e => {
         if(!e || !e.candidate || !e.candidate.candidate) return;
@@ -364,7 +365,7 @@ const send = async (host, port, message) => {
                 // console.log(`Response: [${response}]`)
                 const remote_sdp_attrs = decode_sdp(response)
                 rtc_port = remote_sdp_attrs.port
-                const rtc_host = remote_sdp_attrs.ip || host
+                rtc_host = remote_sdp_attrs.ip || host
                 // TODO: Use response message to set sdp
                 console.log('offer', decode_sdp(message))
                 console.log('answer', decode_sdp(response))
