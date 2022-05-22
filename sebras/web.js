@@ -55,23 +55,30 @@ const decode_sdp = buffer => {
     const arr2str = arr => arr.map(i => String.fromCharCode(i % 128)).join("")
     const decode_str = b => arr2str(b.slice(0, b.findIndex(i => i >= 128) + 1).map(i => i % 128))
     const frmt_fngrprnt = a => a.map(i => ('0' + i.toString(16)).slice(-2)).join(':').toUpperCase()
+    const decode_ip = ip => ip.length >= 4? `${ip[0]}.${ip[1]}.${ip[2]}.${ip[3]}` : null;
     const fingerprint = frmt_fngrprnt(buffer.slice(0,32))
     const port = uint8arr_2_uint16BEarr(buffer.slice(32,34))[0]
     const ufrag = decode_str(buffer.slice(34))
     const pwd = decode_str(buffer.slice(34 + ufrag.length))
-    return { fingerprint, port, ufrag, pwd }
+    if(buffer.length <= 34 + ufrag.length + pwd.length){
+        return { fingerprint, port, ufrag, pwd }
+    }
+    const ip = decode_ip(buffer.slice(34 + ufrag.length + pwd.length))
+    return { fingerprint, port, ufrag, pwd, ip }
 }
 
 const encode_sdp = attributes => {
     const str2arr = str => [...str].map(c => c.charCodeAt())
     const encode_str = str => str2arr(str).map((c, i) => c + 128 * (i == str.length - 1))
     const parse_fingerprint = f => f.split(':').map(i => parseInt(i, 16))
-    const { fingerprint, port, ufrag, pwd } = attributes
+    const parse_ip = ip => !ip? [] : ip.split('.').map(i => parseInt(i))
+    const { fingerprint, port, ufrag, pwd, ip } = attributes
     return [
         ...parse_fingerprint(fingerprint),
         ...uint16BEarr_2_uint8arr([port]),
         ...encode_str(ufrag),
-        ...encode_str(pwd)
+        ...encode_str(pwd),
+        ...parse_ip(ip)
     ]
 }
 
@@ -355,12 +362,15 @@ const send = async (host, port, message) => {
                 const time_diff = (new Date() - start_time) / 1000
                 console.log(`SEBRAS: Handshake completed in ${time_diff}s`)
                 // console.log(`Response: [${response}]`)
-                rtc_port = decode_sdp(response).port
+                const remote_sdp_attrs = decode_sdp(response)
+                rtc_port = remote_sdp_attrs.port
+                const rtc_host = remote_sdp_attrs.ip || host
                 // TODO: Use response message to set sdp
                 console.log('offer', decode_sdp(message))
                 console.log('answer', decode_sdp(response))
 
-                const sdp = stringify_sdp({ answer: true, host, ...decode_sdp(response)})
+                const sdp = stringify_sdp({ answer: true, host: rtc_host, ...remote_sdp_attrs})
+                console.log("Using Remote SDP:", sdp);
                 connection.setRemoteDescription({ type: 'answer', sdp })
                 document.body.innerHTML = `Waiting for webRTC handshake`
 
