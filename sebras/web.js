@@ -143,7 +143,7 @@ const open_socket = () => {
         socket_close()
         socket = new RTCPeerConnection()
         socket_reset_count++
-        await socket.createDataChannel("default")
+        socket.createDataChannel("default")
     }
 
     const socket_count = () => socket_reset_count
@@ -329,10 +329,13 @@ const send = async (host, port, message) => {
 
 (async () => {
     console.log("SEBRAS: Session establishment by recklessly abusing STUN")
-    const host = window.location.search.slice(1)
-    const port = 8535
+    const arg = window.location.search.slice(1) || "localhost"
+    const colon_pos = arg.lastIndexOf(':')
+    const [host, port] = colon_pos < 0
+        ? [arg, 8535]
+        : [arg.slice(0, colon_pos), arg.slice(colon_pos + 1)]
     const connection = new RTCPeerConnection()
-    const channel = await connection.createDataChannel('default')
+    const channel = connection.createDataChannel('default')
 
     let rtc_port = null;
     let rtc_host = null;
