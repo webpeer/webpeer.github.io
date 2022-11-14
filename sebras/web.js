@@ -129,7 +129,7 @@ const parse_sdp = sdp => {
     }
 }
 
-const open_socket = () => {
+const open_socket = (init_port) => {
     let socket = null
     let socket_reset_count = 0
 
@@ -187,7 +187,7 @@ const open_socket = () => {
         }
         const _urls = [...ports.map(p => `stun:${host}:${p}`)]
         _retry_interval = setInterval(async () => {
-            if(ports[0] != 8535){
+            if(ports[0] != init_port){
                 if(response_count_on_last_retry == response_count){
                     // console.log("Retrying", ports, response_count)
                     await socket_make()
@@ -214,7 +214,7 @@ const open_socket = () => {
                 clearInterval(_retry_interval)
                 _reject(new ErrorConnectionRefused(`No reply from ${host}`))
             }
-        }, ports[0] != 8535? (1000 + 500 * retry_count) : (_cancel_timeout *= 2));
+        }, ports[0] != init_port? (1000 + 500 * retry_count) : (_cancel_timeout *= 2));
         return new Promise((accept, reject) => {
             _accept = accept
             _reject = reject
@@ -253,7 +253,7 @@ const make_incomming_packet_filter = (packet_set, accept_empty) => r => {
 }
 
 const send = async (host, port, message) => {
-    const { socket_send, socket_close, socket_count } = open_socket()
+    const { socket_send, socket_close, socket_count } = open_socket(port)
     // Send up to 255 "bytes of data" using (1 + 1 + 8 + 128 =) 138 ports
     // With 128 data ports open, each stun request carries 16 bits of information and each row can
     // call up to 8 times. That is 4 bytes per row. This should be enouth to setup a webRTC session.
