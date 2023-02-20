@@ -1,14 +1,34 @@
 <!doctype html>
+<!-- <html manifest="/cache.manifest"> -->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
+        <!-- <meta name="theme-color" content="rgba(255,255,255,255)"/> -->
+        <meta name="theme-color" content="#ffffff"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+        <title>Simple</title>
+        <link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="/ios.png">
+        <link rel="stylesheet" href="/index.css">
 
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>webpeer</title>
-</head>
-
-<body>
-
-Hello webpeer
-
-</body>
+        <meta name="description" content="A mini-encyclopedia of Pokémon species, types, evolutions, and moves.">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    </head>
+    <body>
+    </body>
+    <script>
+        console.log("Test logging", navigator.serviceWorker);
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js", {scope: './'});
+            console.log("Installing service worker");
+        }
+    </script>
 </html>
+
+<script type="module">
+import init from '/index.js';
+init("/index.wasm");
+</script>
