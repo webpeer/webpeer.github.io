@@ -1,0 +1,15 @@
+{
+  "short_name": "Simple",
+  "name": "Simple",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/ios.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "index.html",
+  "theme_color": "white",
+  "background_color": "white"
+}
